@@ -20,6 +20,9 @@ import asyncio
 import json
 import logging
 import signal
+import inspect
+
+from sdv import conf
 
 import grpc
 from sdv.util.log import (  # type: ignore
@@ -29,6 +32,9 @@ from sdv.util.log import (  # type: ignore
 from sdv.vehicle_app import VehicleApp, subscribe_topic
 from sdv_model import Vehicle, vehicle  # type: ignore
 from sdv_model.proto.seats_pb2 import BASE, SeatLocation  # type: ignore
+from sdv.vdb.subscriptions import SubscriptionManager, VdbSubscription
+
+from sdv.dapr.server import register_topic, run_server
 
 logging.setLogRecordFactory(get_opentelemetry_log_factory())
 logging.basicConfig(format=get_opentelemetry_log_format())
@@ -53,6 +59,40 @@ class SeatAdjusterApp(VehicleApp):
         super().__init__()
         self.Vehicle = vehicle_client
 
+    async def run(self):
+        """Run the Vehicle App"""
+        methods = inspect.getmembers(self)
+        if not conf.DISABLE_DAPR:
+            await run_server()
+            # dapr requires to subscribe to pubsub topics during sidecar initialization
+            for method in methods:
+                if hasattr(method[1], "subscribeTopic"):
+                    try:
+                        register_topic(method[1].subscribeTopic, method[1])
+                    except Exception as ex:
+                        logger.exception(ex)
+        else:
+            print("conf.DISABLE == True", flush=True)
+
+        # register vehicle data broker subscriptions using dapr grpc proxying after dapr
+        # is initialized
+        for method in methods:
+            if hasattr(method[1], "subscribeDataPoints"):
+                sub = VdbSubscription(
+                    self._vdb_client, method[1].subscribeDataPoints, method[1]
+                )
+                try:
+                    SubscriptionManager._add_subscription(sub)
+                except Exception as ex:
+                    logger.exception(ex)
+
+        try:
+            await self.on_start()
+            while True:
+                await asyncio.sleep(1)
+        except Exception:
+            await self.stop()
+
     async def on_start(self):
         """Run when the vehicle app starts"""
         await self.Vehicle.Cabin.Seat.element_at(1, 1).Position.subscribe(
@@ -62,10 +102,7 @@ class SeatAdjusterApp(VehicleApp):
     async def on_seat_position_changed(self, data):
         response_topic = "seatadjuster/currentPosition"
         seat_path = self.Vehicle.Cabin.Seat.element_at(1, 1).Position.get_path()
-        await self.publish_mqtt_event(
-            response_topic,
-            json.dumps({"position": data.fields[seat_path].uint32_value}),
-        )
+        print(f"on_seat_position_changed: {data.fields[seat_path].uint32_value}", flush=True)
 
     @subscribe_topic("seatadjuster/setPosition/request")
     async def on_set_position_request_received(self, data_str: str) -> None:
@@ -105,12 +142,15 @@ class SeatAdjusterApp(VehicleApp):
                 is {vehicle_speed} and not 0"""
             response_data["result"] = {"status": 1, "message": error_msg}
 
-        await self.publish_mqtt_event(response_topic, json.dumps(response_data))
+        print(f"on_set_position_request_received: {response_data.result.status}", flush=True)
+        # await self.publish_mqtt_event(response_topic, json.dumps(response_data))
 
 
 async def main():
-
     """Main function"""
+    conf.DISABLE_DAPR = True
+    conf.VEHICLE_DATA_BROKER_ADDRESS = "127.0.0.1:55555"
+    logger.info("Using conf.VEHICLE_DATA_BROKER_ADDRESS: %s", conf.VEHICLE_DATA_BROKER_ADDRESS)
     logger.info("Starting seat adjuster app...")
     seat_adjuster_app = SeatAdjusterApp(vehicle)
     await seat_adjuster_app.run()

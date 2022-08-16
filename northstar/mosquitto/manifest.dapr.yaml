@@ -1,0 +1,49 @@
+name: seat-adjuster-dapr
+version: 0.0.2
+init: /dapr
+uid: 1000
+gid: 1000
+args:
+  - "run"
+  - "--app-id"
+  - "vehicleapp"
+  - "--app-protocol"
+  - "grpc"
+  - "--app-port"
+  - "50008"
+  - "--dapr-grpc-port"
+  - "50001"
+  - "--components-path"
+  - "./.dapr/components"
+  - "--config"
+  - "./.dapr/config.yaml"
+  - "./run-exe"
+env:
+  HOME: "/dist"
+  DAPR_APP_ID: "seatadjuster"
+  DAPR_APP_PORT: 50008
+  DAPR_GRPC_PORT: 50001
+  DAPR_HTTP_PORT: 3500
+  SEATSERVICE_DAPR_APP_ID: "seatservice"
+  VEHICLEDATABROKER_DAPR_APP_ID: "vehicledatabroker"
+io:
+  stdout: pipe
+  stderr: pipe
+mounts:
+  /dev:
+    type: dev
+  /proc:
+    type: proc
+  /lib:
+    type: bind
+    host: /lib
+  /lib64:
+    type: bind
+    host: /lib64
+  /system:
+    type: bind
+    host: /system
+  /tmp:
+    type: bind
+    host: /tmp
+    options: rw

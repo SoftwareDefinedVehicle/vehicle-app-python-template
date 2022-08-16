@@ -1,0 +1,38 @@
+name: vehicledatabroker
+version: 0.0.3
+init: /databroker
+uid: 1000
+gid: 1000
+args:
+ - "--address"
+ - "0.0.0.0"
+ - "--metadata"
+ - "vss.json"
+env:
+  DAPR_APP_ID: "vehicledatabroker"
+  DAPR_APP_PORT: 55555
+  DAPR_GRPC_PORT: 52001
+  DAPR_HTTP_PORT: 3500
+  SEATSERVICE_DAPR_APP_ID: "seatservice"
+  VEHICLEDATABROKER_DAPR_APP_ID: "vehicledatabroker"
+io:
+  stdout: pipe
+  stderr: pipe
+mounts:
+  /dev:
+    type: dev
+  /proc:
+    type: proc
+  /lib:
+    type: bind
+    host: /lib
+  /lib64:
+    type: bind
+    host: /lib64
+  /system:
+    type: bind
+    host: /system
+  /tmp:
+    type: bind
+    host: /tmp
+    options: rw
