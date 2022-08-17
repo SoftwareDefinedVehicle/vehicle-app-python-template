@@ -1,0 +1,20 @@
+FROM ubuntu as builder
+RUN apt-get update && apt-get install -y mosquitto
+RUN mkdir /dist && cp /usr/sbin/mosquitto /dist/
+RUN  ldd /usr/sbin/mosquitto | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /dist/
+
+FROM rust:1.63.0-slim-bullseye as packager
+
+RUN apt-get update && apt-get install -y git build-essential libclang1 libclang-dev libz-dev squashfs-tools
+WORKDIR /tmp
+RUN git clone https://github.com/esrlabs/northstar
+WORKDIR /tmp/northstar
+RUN cargo build --release --bin northstar-sextant
+
+COPY --from=builder ./dist/ /dist/
+COPY ./northstar/mosquitto/manifest.yaml ./app/
+COPY ./northstar/northstar.key ./target/northstar/
+RUN mkdir -p /tmp/northstar/target/northstar/repository && chmod a+w /tmp/northstar/target/northstar/repository
+RUN ./target/release/northstar-sextant pack --manifest ./app/manifest.yaml --root /dist --out ./target/northstar/repository --key ./examples/northstar.key --compression-algorithm gzip
+
+CMD ["./mosquitto"]

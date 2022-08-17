@@ -1,8 +1,10 @@
 name: mosquitto
-version: 0.0.1
+version: 0.0.2
 init: /mosquitto
 uid: 1000
 gid: 1000
+env:
+  LD_LIBRARY_PATH: "/"
 io:
   stdout: pipe
   stderr: pipe
