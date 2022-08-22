@@ -23,7 +23,7 @@ RUN git clone https://github.com/esrlabs/northstar
 WORKDIR /tmp/northstar
 RUN cargo build --release --bin northstar-sextant
 
-COPY ./.vscode/scripts/assets/seatservice/v0.1.0/x86_64/target/x86_64/release/install/bin/seat_service /dist/
+COPY ./.vscode/scripts/assets/seatservice/v0.1.0/aarch64/target/aarch64/release/install/bin/seat_service /dist/
 COPY ./northstar/seatservice/manifest.yaml ./app/
 COPY ./northstar/northstar.key ./target/northstar/
 RUN mkdir -p /tmp/northstar/target/northstar/repository && chmod a+w /tmp/northstar/target/northstar/repository

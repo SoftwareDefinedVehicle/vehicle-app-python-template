@@ -23,7 +23,7 @@ RUN git clone https://github.com/esrlabs/northstar
 WORKDIR /tmp/northstar
 RUN cargo build --release --bin northstar-sextant
 
-COPY ./.vscode/scripts/assets/databroker/databroker-v0.17.0/x86_64/target/release/databroker /dist/
+COPY ./.vscode/scripts/assets/databroker/databroker-v0.17.0/aarch64/target/aarch64-unknown-linux-gnu/release/databroker /dist/
 COPY ./northstar/vehicledatabroker/manifest.yaml ./app/
 COPY ./northstar/northstar.key ./target/northstar/
 COPY ./.vscode/scripts/vss.json /dist/
