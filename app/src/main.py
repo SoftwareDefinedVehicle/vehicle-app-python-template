@@ -28,6 +28,7 @@ from sdv.util.log import (  # type: ignore
 from sdv.vdb.subscriptions import DataPointReply
 from sdv.vehicle_app import VehicleApp, subscribe_topic
 from sdv_model import Vehicle, vehicle  # type: ignore
+import digital_auto_compat #type: ignore
 
 # Configure the VehicleApp logger with the necessary log config and level.
 logging.setLogRecordFactory(get_opentelemetry_log_factory())
@@ -61,58 +62,64 @@ class SampleApp(VehicleApp):
         self.Vehicle = vehicle_client
 
     async def on_start(self):
-        """Run when the vehicle app starts"""
-        # This method will be called by the SDK when the connection to the
-        # Vehicle DataBroker is ready.
-        # Here you can subscribe for the Vehicle Signals update (e.g. Vehicle Speed).
-        await self.Vehicle.Speed.subscribe(self.on_speed_change)
+        profile = {
+            "standard": {
+                "BackrestLumbarHeight": 0,
+                "HeadrestAngle": 0,
+                "Positon": 0,
+                "Height": 0,
+            },
+            "user": {
+                "BackrestLumbarHeight": 20,
+                "HeadrestAngle": 10,
+                "Positon": 42,
+                "Height": 10,
+            },
+        }
 
-    async def on_speed_change(self, data: DataPointReply):
-        """The on_speed_change callback, this will be executed when receiving a new
-        vehicle signal updates."""
-        # Get the current vehicle speed value from the received DatapointReply.
-        # The DatapointReply containes the values of all subscribed DataPoints of
-        # the same callback.
-        vehicle_speed = data.get(self.Vehicle.Speed).value
+        PrevProfileId = 1
 
-        # Do anything with the received value.
-        # Example:
-        # - Publishes current speed to MQTT Topic (i.e. DATABROKER_SUBSCRIPTION_TOPIC).
-        await self.publish_mqtt_event(
-            DATABROKER_SUBSCRIPTION_TOPIC,
-            json.dumps({"speed": vehicle_speed}),
+        async def on_user_profile_changed(Issuer: str):
+            print("Listener was triggered")
+            if PrevProfileId != Issuer:
+                await self.Vehicle.Cabin.Seat.Row1.Pos1.Height.set(
+                    profile[Issuer]["VerticalHeight"]
+                )
+                await self.Vehicle.Cabin.Seat.Row1.Pos1.Position.set(
+                    profile[Issuer]["HorizontalPosition"]
+                )
+
+        await self.Vehicle.Cabin.Seat.Row1.Pos1.Position.subscribe(
+            on_user_profile_changed
         )
+        print("Listener was registered")
 
-    @subscribe_topic(GET_SPEED_REQUEST_TOPIC)
-    async def on_get_speed_request_received(self, data: str) -> None:
-        """The subscribe_topic annotation is used to subscribe for incoming
-        PubSub events, e.g. MQTT event for GET_SPEED_REQUEST_TOPIC.
-        """
-
-        # Use the logger with the preferred log level (e.g. debug, info, error, etc)
-        logger.debug(
-            "PubSub event for the Topic: %s -> is received with the data: %s",
-            GET_SPEED_REQUEST_TOPIC,
-            data,
+        # Now test the listener
+        print("Changing user profile")
+        BackrestLumbarHeight = (
+            await vehicle.Cabin.Seat.Row1.Pos1.Backrest.Lumbar.Height.get()
         )
+        HeadrestAngle = await vehicle.Cabin.Seat.Row1.Pos1.Headrest.Angle.get()
+        Positon = await vehicle.Cabin.Seat.Row1.Pos1.Position.get()
+        Height = await vehicle.Cabin.Seat.Row1.Pos1.Height.get()
 
-        # Getting current speed from VehicleDataBroker using the DataPoint getter.
-        vehicle_speed = (await self.Vehicle.Speed.get()).value
+        print("Lumbar Height", BackrestLumbarHeight)
+        print("Headrest Angle", HeadrestAngle)
+        print("Position", Positon)
+        print("Height", Height)
 
-        # Do anything with the speed value.
-        # Example:
-        # - Publishe the vehicle speed to MQTT topic (i.e. GET_SPEED_RESPONSE_TOPIC).
-        await self.publish_mqtt_event(
-            GET_SPEED_RESPONSE_TOPIC,
-            json.dumps(
-                {
-                    "result": {
-                        "status": 0,
-                        "message": f"""Current Speed = {vehicle_speed}""",
-                    },
-                }
-            ),
+        print("Changing user profile")
+        BackrestLumbarHeight = (
+            await vehicle.Cabin.Seat.Row1.Pos1.Backrest.Lumbar.Height.get()
         )
+        HeadrestAngle = await vehicle.Cabin.Seat.Row1.Pos1.Headrest.Angle.get()
+        Positon = await vehicle.Cabin.Seat.Row1.Pos1.Position.get()
+        Height = await vehicle.Cabin.Seat.Row1.Pos1.Height.get()
+
+        print("Lumbar Height", BackrestLumbarHeight)
+        print("Headrest Angle", HeadrestAngle)
+        print("Position", Positon)
+        print("Height", Height)
 
 
 async def main():
