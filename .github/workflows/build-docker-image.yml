@@ -124,9 +124,9 @@ jobs:
 
       - name: "${{ matrix.component.Name }} -- Inspect tar image with skopeo"
         run: |
-          skopeo inspect --raw oci-archive:${{ matrix.component.Name }}.tar | jq
-          skopeo inspect oci-archive:${{ matrix.component.Name }}.tar
-          skopeo copy oci-archive:${{ matrix.component.Name }}.tar docker-archive:${{ matrix.component.Name }}-arch.tar
+          skopeo inspect --raw oci-archive:${{ matrix.component.Name }}.tar:${{ github.sha }} | jq
+          skopeo inspect oci-archive:${{ matrix.component.Name }}.tar:${{ github.sha }}
+          skopeo copy --all oci-archive:${{ matrix.component.Name }}.tar docker-archive:${{ matrix.component.Name }}-arch.tar
 
       - name: "${{ matrix.component.Name }} -- Scan docker image for vulnerabilities"
         uses: aquasecurity/trivy-action@0.3.0
