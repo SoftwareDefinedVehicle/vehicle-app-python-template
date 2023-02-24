@@ -50,7 +50,10 @@ FROM scratch
 
 COPY --from=builder ./app/dist/run-exe /dist/
 
-WORKDIR /tmp
+# Mark tmp folder to be mounted externally to give container runtime a chance to clean up.
+# This is a workaround for the missing tmpfs mount in 'scratch' containers.
+VOLUME /tmp
+
 WORKDIR /dist
 
 ENV PATH="/dist:$PATH"
