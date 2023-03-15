@@ -14,8 +14,6 @@
 
 """A sample skeleton vehicle app."""
 
-# pylint: disable=C0103, C0413, E1101
-
 import asyncio
 import json
 import logging
@@ -27,7 +25,7 @@ from sdv.util.log import (  # type: ignore
 )
 from sdv.vdb.subscriptions import DataPointReply
 from sdv.vehicle_app import VehicleApp, subscribe_topic
-from sdv_model import Vehicle, vehicle  # type: ignore
+from vehicle import Vehicle, vehicle  # type: ignore
 
 # Configure the VehicleApp logger with the necessary log config and level.
 logging.setLogRecordFactory(get_opentelemetry_log_factory())
@@ -116,7 +114,6 @@ class SampleApp(VehicleApp):
 
 
 async def main():
-
     """Main function"""
     logger.info("Starting SampleApp...")
     # Constructing SampleApp and running it.

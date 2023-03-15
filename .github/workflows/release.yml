@@ -1,3 +1,4 @@
+# This file is maintained by velocitas CLI, do not modify manually. Change settings in .velocitas.json
 # Copyright (c) 2022 Robert Bosch GmbH and Microsoft Corporation
 #
 # This program and the accompanying materials are made available under the
@@ -32,8 +33,6 @@ jobs:
       - name: Get matrix data
         id: export-deployment-matrix
         run: |
-          SITE_PACKAGES=$(python -m site --user-site)
-          sed -i "s|SITE_PACKAGES|$SITE_PACKAGES|g" ./app/AppManifest.json
           MATRIX=$(cat ./app/AppManifest.json | tr '\n' ' ')
 
           echo "deployment-matrix=$MATRIX" >> $GITHUB_OUTPUT
@@ -64,7 +63,7 @@ jobs:
 
       - id: github-repository-name-case-adjusted
         name: Prepare repository name in lower case for docker upload.
-        uses: ASzc/change-string-case-action@v4
+        uses: ASzc/change-string-case-action@v5
         with:
           string: ${{ github.repository }}
 
@@ -77,7 +76,7 @@ jobs:
           intervalSeconds: 20
 
       - name: Download builds from Build multiarch image workflow artifacts
-        uses: dawidd6/action-download-artifact@v2.23.0
+        uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: build-multiarch-image.yml
@@ -96,6 +95,19 @@ jobs:
           tag=$(echo docker://$REGISTRY/$VAPP_NAME:$VAPP_VERSION | tr '[:upper:]' '[:lower:]')
           echo "Copy vApp image $VAPP_IMAGE to '$tag'"
           skopeo copy --all  oci-archive:$VAPP_IMAGE "$tag" --additional-tag="docker://$REGISTRY/$VAPP_NAME:latest"
+
+      - name: ${{ matrix.component.Name }} -- Download CI artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: ci.yml
+          workflow_conclusion: success
+          path: ./ci-artifacts
+
+      - name: ${{ matrix.component.Name }} -- Upload assets
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ./ci-artifacts/AppManifest/AppManifest.json
 
   release-documentation:
     name: Generate release documentation
@@ -117,7 +129,8 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: "18"
+          check-latest: true
 
       - name: Conditional input event value
         uses: haya14busa/action-cond@v1
@@ -197,7 +210,7 @@ jobs:
 
           cp ./README.md ./hugo/content/documentation/_index.md
           sed -i '1d' hugo/content/documentation/_index.md
-          sed -i '1s/^/---\ntitle: "VehicleApp using Python"\ndraft: false\n---\n/' hugo/content/documentation/_index.md
+          sed -i '1s/^/---\ntitle: "VehicleApp using python"\ndraft: false\n---\n/' hugo/content/documentation/_index.md
 
           cp .vehicleApp/Documentation/Outbox/* ./hugo/content/reports
 

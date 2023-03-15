@@ -4,11 +4,14 @@
         "Port": 50008,
         "DAPR_GRPC_PORT": 50001,
         "Dockerfile": "./app/Dockerfile",
+        "VehicleModel": {
+            "src": "https://github.com/COVESA/vehicle_signal_specification/releases/download/v3.0/vss_rel_3.0.json"
+        },
         "dependencies": {
             "services": [
                 {
                     "name": "seatservice",
-                    "image": "ghcr.io/boschglobal/kuksa.val.services/seat_service",
+                    "image": "ghcr.io/eclipse/kuksa.val.services/seat_service",
                     "version": "v0.2.0"
                 }
             ],
@@ -20,8 +23,8 @@
                 },
                 {
                     "name": "databroker",
-                    "image": "ghcr.io/boschglobal/kuksa.val/databroker",
-                    "version": "0.0.2"
+                    "image": "ghcr.io/eclipse/kuksa.val/databroker",
+                    "version": "0.3.0"
                 },
                 {
                     "name": "feedercan",
@@ -34,10 +37,10 @@
             },
             "dapr": {
                 "cli": {
-                    "version": "1.7.1"
+                    "version": "1.10.0"
                 },
                 "runtime": {
-                    "version": "1.8.1"
+                    "version": "1.10.2"
                 }
             }
         }

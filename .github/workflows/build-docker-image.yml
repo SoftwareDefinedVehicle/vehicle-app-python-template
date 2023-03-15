@@ -1,3 +1,4 @@
+# This file is maintained by velocitas CLI, do not modify manually. Change settings in .velocitas.json
 # Copyright (c) 2022 Robert Bosch GmbH and Microsoft Corporation
 #
 # This program and the accompanying materials are made available under the
@@ -37,6 +38,7 @@ jobs:
   build-image:
     name: "Building image (${{ matrix.component.Name }})"
     runs-on: ubuntu-latest
+    container: ghcr.io/eclipse-velocitas/devcontainer-base-images/python:latest
     strategy:
       matrix:
         component: ${{ fromJson(inputs.deployment-matrix-str) }}
@@ -47,6 +49,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
 
       - name: Clone Release Documentation Action repository
         uses: actions/checkout@v3
@@ -54,24 +58,27 @@ jobs:
           repository: eclipse-velocitas/release-documentation-action
           path: "./.github/actions"
 
-      - name: Check Docker version
-        run: docker --version
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          version: v0.9.0
 
       - id: github-repository-name-case-adjusted
         name: Prepare repository name in lower case for docker upload. This supports repository names in mixed case
-        uses: ASzc/change-string-case-action@v4
+        uses: ASzc/change-string-case-action@v5
         with:
           string: ${{ github.repository }}
 
       - uses: de-vri-es/setup-git-credentials@v2
         with:
           credentials: https://user:${{ secrets.GITHUB_TOKEN }}@github.com/
+
+      - name: Init velocitas project
+        run: |
+          velocitas init
 
       - name: Setup git config
         shell: bash
@@ -122,6 +129,11 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{steps.github-repository-name-case-adjusted.outputs.lowercase}}
 
+      - name: "Install skopeo"
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install skopeo
+
       - name: "${{ matrix.component.Name }} -- Inspect tar image with skopeo"
         run: |
           skopeo inspect --raw oci-archive:${{ matrix.component.Name }}.tar:${{ github.sha }} | jq
@@ -129,7 +141,7 @@ jobs:
           skopeo copy --all oci-archive:${{ matrix.component.Name }}.tar docker-archive:${{ matrix.component.Name }}-arch.tar
 
       - name: "${{ matrix.component.Name }} -- Scan docker image for vulnerabilities"
-        uses: aquasecurity/trivy-action@0.3.0
+        uses: aquasecurity/trivy-action@0.8.0
         with:
           input: ${{ matrix.component.Name }}-arch.tar
           exit-code: "0"
@@ -167,14 +179,22 @@ jobs:
           check_name: Trivy Scan Results (${{ matrix.component.Name }})
           comment_title: Trivy Scan Results (${{ matrix.component.Name }})
           fail_on: "errors"
-          files: ./junit.xml
+          junit_files: ./junit.xml
 
       - name: "${{ matrix.component.Name }} -- Upload image to artifacts"
         if: ${{ steps.image_build.outcome == 'success' }}
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v3
         env:
           VAPP_IMAGE: ${{ matrix.component.Name }}-${{ inputs.platform }}
         with:
           name: ${{ env.VAPP_IMAGE }}
           path: ./${{ matrix.component.Name }}.tar
+          if-no-files-found: error
+
+      - name: "${{ matrix.component.Name }} -- Upload AppManifest.json to artifacts"
+        if: ${{ steps.image_build.outcome == 'success' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: AppManifest
+          path: ./app/AppManifest.json
           if-no-files-found: error

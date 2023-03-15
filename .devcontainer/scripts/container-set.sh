@@ -1,4 +1,5 @@
 #!/bin/bash
+# This file is maintained by velocitas CLI, do not modify manually. Change settings in .velocitas.json
 # Copyright (c) 2022 Robert Bosch GmbH and Microsoft Corporation
 #
 # This program and the accompanying materials are made available under the
@@ -18,6 +19,3 @@ echo "### Checking container creation                     ###"
 echo "#######################################################"
 useradd vscode --password vscode -m
 usermod -aG sudo vscode
-
-sudo chown -R vscode $HOME
-echo "export PATH=\"$PATH:/root/.local/bin/\"" >> /home/vscode/.profile
