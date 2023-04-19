@@ -5,7 +5,13 @@
 ### Dash Command
 
 ```java
-java -jar org.eclipse.dash.licenses-0.0.1-20230403.055043-775.jar clearlydefined.input -review -token <token> -project automotive.velocitas -summary DEPENDENCIES
+java \
+    -jar org.eclipse.dash.licenses-0.0.1-20230403.055043-775.jar \
+    clearlydefined.input \
+    -review \
+    -token <token> \
+    -project automotive.velocitas \
+    -summary DEPENDENCIES
 ```
 
 With proxy:
