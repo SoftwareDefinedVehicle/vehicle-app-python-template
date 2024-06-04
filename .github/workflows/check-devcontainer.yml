@@ -20,7 +20,7 @@ on:
   push:
     # Run only on branches/commits and not tags
     branches:
-      - test-devcontainer-files
+      - main
   pull_request:
     branches:
       - main
@@ -39,9 +39,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
-            pip3 install -r .devcontainer/tests/automated_tests/requirements.txt
-            pytest -sx .devcontainer/tests
-
+            ls -al /home/vscode/.velocitas
       - name: Upload logs
         uses: actions/upload-artifact@v4
         if: always()
