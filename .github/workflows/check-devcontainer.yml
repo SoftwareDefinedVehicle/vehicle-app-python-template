@@ -20,7 +20,7 @@ on:
   push:
     # Run only on branches/commits and not tags
     branches:
-      - main
+      - test-devcontainer-files
   pull_request:
     branches:
       - main
@@ -40,6 +40,7 @@ jobs:
         with:
           runCmd: |
             ls -al /home/vscode/.velocitas
+
       - name: Upload logs
         uses: actions/upload-artifact@v4
         if: always()
