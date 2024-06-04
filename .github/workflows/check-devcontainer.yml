@@ -39,20 +39,22 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
-            ls -al /home/vscode/.velocitas
+            cp -r /home/vscode/.velocitas/packages .
 
-      - name: Upload logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: logs
-          path: ./logs
-          retention-days: 1
+      # - name: Upload logs
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: logs
+      #     path: ./logs
+      #     retention-days: 1
 
       - name: Upload logs packages
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: packages1
-          path: /home/vscode/.velocitas/packages/
+          path: ./packages/
           retention-days: 1
+
+
