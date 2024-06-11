@@ -19,6 +19,11 @@ on:
   release:
     types: [published, edited]
 
+# Needed if GITHUB_TOKEN by default do not have right to create release
+permissions:
+  contents: write
+  packages: write
+
 jobs:
 
   get-app-name:
